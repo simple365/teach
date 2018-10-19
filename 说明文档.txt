@@ -1,0 +1,28 @@
+Flume:
+为什么这么设计，有什么好处？
+
+Kafka
+
+1.如何写入分区
+
+
+Java
+
+
+
+RDS：
+事务的四个性
+
+
+Spark 
+checkpoint是什么
+
+
+spark-submit  --jars spark-streaming-kafka-0-10_2.11-2.1.1.jar,kafka-clients-1.1.0.jar,mysql-connector-java-5.1.44-bin.jar --class com.teach.business.ReadNewsStream spark-news-1.0-SNAPSHOT.jar
+
+java -classpath collector.jar com.tom.business.App >test.log
+
+hdfs dfs -touchz hdfs:///tmp/teach/stopSpark
+
+
+./kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic news_score_test
