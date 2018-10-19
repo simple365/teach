@@ -1,0 +1,180 @@
+--脚本，先假定 hdfs dfs -mkdir -p /tmp/teach/logs;
+
+./flume-ng agent --conf ../conf -f ../conf/log-kafka.properties --name a1 -Dflume.root.logger=INFO,file &
+
+kafka 读取数据
+
+------------ sql 相关
+
+
+create schema teach;
+use teach;
+
+-- 原始日志表
+
+drop table if exists stage_originlog_lzo_dt;
+CREATE EXTERNAL TABLE `teach`.`stage_originlog_lzo_dt`(`line` string)
+PARTITIONED BY (`dt` string)
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe'
+WITH SERDEPROPERTIES (
+  'serialization.format' = '1'
+)
+STORED AS
+  INPUTFORMAT 'com.hadoop.mapred.DeprecatedLzoTextInputFormat'
+  OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat'
+LOCATION '/tmp/teach/logs/';
+
+
+-- 基础表
+drop table if exists ods_basedata_dt;
+CREATE EXTERNAL TABLE `ods_basedata_dt`(`user_id` string, `area` string, `app_version` string, `app_time` string, `event_name` string, `event_json` string, `server_time` string)
+PARTITIONED BY (`dt` string)
+location '/tmp/teach/ods_basedata_dt/';
+
+
+
+-- 前台后台活跃表
+drop table if exists ods_foreground_dt;
+CREATE EXTERNAL TABLE `ods_foreground_dt`(`user_id` string, `area` string, `app_version` string, `app_time` string, `create_time` string, `server_time` string)
+PARTITIONED BY (`dt` string)
+location '/tmp/teach/ods_foreground_dt/';
+
+
+drop table if exists ods_background_dt;
+CREATE EXTERNAL TABLE `ods_background_dt`(`user_id` string, `area` string, `app_version` string, `app_time` string, `create_time` string, `server_time` string)
+PARTITIONED BY (`dt` string)
+location '/tmp/teach/ods_background_dt/';
+
+
+-- 新闻展示表
+drop table if exists ods_display_dt;
+CREATE EXTERNAL TABLE `ods_display_dt`(`user_id` string, `area` string, `app_version` string, `app_time` string, `action` string,news_id string, `server_time` string)
+PARTITIONED BY (`dt` string)
+location '/tmp/teach/ods_display_dt/';
+
+
+
+-- 新闻每日表
+drop table if exists mid_daily_news_dt;
+CREATE EXTERNAL TABLE `mid_daily_news_dt`(`news_id` string, `area` string,total_display string,total_click string)
+PARTITIONED BY (`dt` string)
+location '/tmp/teach/mid_daily_news_dt/';
+
+-- 新闻历史表
+drop table if exists mid_news_history_dt;
+CREATE EXTERNAL TABLE `mid_news_history_dt`(`news_id` string, `area` string, `first_display_time` string,`last_display_time` string,`first_click_time` string,`last_click_time` string,total_display int,total_click int)
+PARTITIONED BY (`dt` string)
+location '/tmp/teach/mid_news_history_dt/';
+
+
+
+--app用户历史表
+drop table if exists mid_user_history_dt;
+CREATE EXTERNAL TABLE `mid_user_history_dt`(`user_id` string, `area` string, app_version string,`first_dat` string,`last_dat` string)
+PARTITIONED BY (`dt` string)
+location '/tmp/teach/mid_user_history_dt/';
+
+
+
+
+
+--活跃用户表
+drop table if exists mid_active_user_dt;
+CREATE EXTERNAL TABLE `mid_active_user_dt`(`user_id` string, `area` string)
+PARTITIONED BY (`dt` string)
+location '/tmp/teach/mid_active_user_dt/';
+
+
+
+
+
+
+---- mongodb 
+/data/softwares/mongodb-linux-x86_64-amazon-4.0.2/bin/mongod -f /data/data/teach/mongodb.conf --bind_ip_all
+mongod -shutdown
+
+db.createUser(
+    {
+      user: "iron",
+      pwd: "man",
+      roles: [
+         { role: "readWrite", db: "test" }  
+      ]
+    }
+)
+
+mongo -u iron -p man -host 10.86.199.238 test
+
+display()
+
+--- mysql
+
+-- 数据量并不大，一天几百万条左右
+drop table if exists news_display;
+create table news_display(
+area varchar(20),
+news_id varchar(20),
+user_id varchar(20),
+time_stam long
+);
+alter table news_display add unique(area,news_id,user_id);
+
+drop table if exists news_click;
+create table news_click(
+area varchar(20),
+news_id varchar(20),
+user_id varchar(20),
+time_stam long
+);
+alter table news_click add unique(area,news_id,user_id);
+
+drop table if exists tmp_display_click;
+create table tmp_display_click(
+action int(2),
+area varchar(20),
+news_id varchar(20),
+user_id varchar(20),
+time_stam long
+);
+alter table tmp_display_click add index(action,area,news_id,user_id);
+ 
+delete t1 from news_display t1 join (select area,news_id,user_id,time_stam from tmp_display_click where action=1) t2 
+on t1.area=t2.area and t1.news_id=t2.news_id and t1.user_id=t2.user_id;
+
+insert ignore into news_display select area,news_id,user_id,time_stam from tmp_display_click where action=1;
+
+
+delete t1 from news_click t1 join (select area,news_id,user_id,time_stam from tmp_display_click where action=2) t2 
+on t1.area=t2.area and t1.news_id=t2.news_id and t1.user_id=t2.user_id;
+
+insert ignore into news_click select area,news_id,user_id,time_stam from tmp_display_click where action=2;
+select t1.*,
+case when t2.click is not null then t2.click else 0 end click  from 
+(select count(distinct user_id) display,news_id,area from news_display group by area,news_id) t1 
+left join 
+(select count(distinct user_id) click ,news_id,area from news_click group by area,news_id) t2  
+on t1.news_id = t2.news_id;  
+
+--最近的新闻质量表,因为数据量并不大，7天的也就几万条
+drop table if exists news_quality;
+create table news_quality(
+news_id varchar(20) primary key,
+quality double,
+time_stam int(10) comment '创建秒数' 
+);
+alter table news_quality add index(news_id);
+alter table news_quality add index(time_stam);
+
+select unix_timestamp(now())
+
+-- 初始化脚本 
+insert overwrite table news_quality select news_id,rand() quality,unix_timestamp(now()) time_stam from (select distinct news_id from news_click) t1;
+
+--新闻热度
+drop table if exists news_heat;
+create table news_heat(
+
+)
+
+
+
