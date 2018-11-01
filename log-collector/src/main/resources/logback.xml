@@ -2,7 +2,8 @@
 <configuration debug="false">
 	<!--定义日志文件的存储地址 勿在 LogBack 的配置中使用相对路径 -->
 	<property name="LOG_HOME" value="/tmp/logs/" />
-	
+    <!--配置规则类的位置-->
+    <conversionRule conversionWord="ip" converterClass="com.tom.business.IPLogConfig" />
 	<!-- 控制台输出 -->
 	<appender name="STDOUT"
 		class="ch.qos.logback.core.ConsoleAppender">
@@ -27,7 +28,7 @@
 		</rollingPolicy>
 		<encoder
 			class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-			<pattern>%msg%n</pattern>
+			<pattern>%ip|%msg%n</pattern>
 		</encoder>
 		<!--日志文件最大的大小 -->
 		<triggeringPolicy
