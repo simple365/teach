@@ -1,3 +1,5 @@
+--
+
 --计算新闻历史，需要找出新闻最大，最小，自动忽略null值，
 create temp view tmp_today_news as 
  select t1.*,t2.total_click,t2.total_display from 

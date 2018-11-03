@@ -110,6 +110,7 @@ display()
 --- mysql
 
 -- 数据量并不大，一天几百万条左右
+最近24小时，一个用户，点击多次，算一个点击，一个用户展示多次，算一个展示。
 drop table if exists news_display;
 create table news_display(
 area varchar(20),
@@ -175,6 +176,8 @@ drop table if exists news_heat;
 create table news_heat(
 
 )
+
+
 
 
 
