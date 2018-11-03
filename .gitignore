@@ -1,2 +1,5 @@
 flume-interceptor/.idea/
 flume-interceptor/target/
+log-collector/target/
+spark-news/.idea/
+spark-news/target/
