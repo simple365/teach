@@ -1,4 +1,6 @@
-package PACKAGE_NAME;
+import com.tom.flume.interceptor.LogUtils;
 
 public class Test {
+    public static void main(String[] args){
+    }
 }

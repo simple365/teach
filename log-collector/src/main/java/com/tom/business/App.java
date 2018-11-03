@@ -8,24 +8,33 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Hello world!
+ * 生产测试日志的
  */
 public class App {
 
     private final static Logger logger = LoggerFactory.getLogger(App.class);
     static Random rand = new Random();
 
+    /**
+     * 1.appkey
+     * 2.循环遍历次数
+     * 3.uid的长度，默认是4
+     * 4.新闻id的长度，默认是4
+     * @param args
+     */
     public static void main(String[] args) {
+        System.out.println(args[0]);
+//       appkey的名称
+        String appkey = args.length > 0 ?args[0] : "weather";
 //		循环遍历次数
         int loop_len = args.length > 1 ? Integer.parseInt(args[1]) : 10 * 10000;
-        long millis = System.currentTimeMillis();
 //		uid的长度
         int uid_length = args.length > 2 ? Integer.parseInt(args[2]) : 4;
 //		新闻id的长度
         int newsid_length = args.length > 3 ? Integer.parseInt(args[3]) : 4;
         for(int i=0;i<loop_len;i++) {
             JSONObject json = new JSONObject();
-            json.put("ap", "weather");
+            json.put("ap", appkey);
             json.put("cm", generateComFields(uid_length));
             JSONArray eventsArray = new JSONArray();
 //        新闻点击，展示
@@ -58,8 +67,8 @@ public class App {
             }
             json.put("et", eventsArray);
 //        时间
-            long log_time = millis - rand.nextInt(1000 * 60 * 60);
-            logger.info(log_time + "|" + json.toJSONString());
+            long millis = System.currentTimeMillis();
+            logger.info(millis + "|" + json.toJSONString());
         }
     }
 
