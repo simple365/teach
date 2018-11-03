@@ -23,7 +23,6 @@ public class App {
      * @param args
      */
     public static void main(String[] args) {
-        System.out.println(args[0]);
 //       appkey的名称
         String appkey = args.length > 0 ?args[0] : "weather";
 //		循环遍历次数
