@@ -8,15 +8,15 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DisplayInterceptor implements Interceptor {
+public class LogValidateInterceptor implements Interceptor {
     public void initialize() {
     }
 
 
     public Event intercept(Event event) {
         String body = new String(event.getBody(), Charset.forName("UTF-8"));
-        // 先验证，body为原始数据，newBody为处理后的数据,判断是否为display的数据类型
-        if (LogUtils.validateReportLog(body) && body.contains("\"display\"")) {
+        // body为原始数据，newBody为处理后的数据,判断是否为display的数据类型
+        if (LogUtils.validateReportLog(body)) {
             return event;
         }
         return null;
@@ -39,7 +39,7 @@ public class DisplayInterceptor implements Interceptor {
 
     public static class Builder implements Interceptor.Builder {
         public Interceptor build() {
-            return new DisplayInterceptor();
+            return new LogValidateInterceptor();
         }
 
         public void configure(Context context) {
@@ -48,3 +48,4 @@ public class DisplayInterceptor implements Interceptor {
     }
 
 }
+
