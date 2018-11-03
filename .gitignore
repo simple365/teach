@@ -3,3 +3,5 @@ flume-interceptor/target/
 log-collector/target/
 spark-news/.idea/
 spark-news/target/
+flume-interceptor/flume-interceptor.iml
+spark-news/.settings/
