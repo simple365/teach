@@ -8,3 +8,12 @@ log-collector/.settings/
 spark-news/.idea/
 spark-news/target/
 spark-news/.settings/
+hive-function/.idea/
+hive-function/target/
+hive-function/hive-function.iml
+log-collector/log-collector.iml
+log-collector/.project
+log-collector/.classpath
+spark-news/.classpath
+spark-news/spark-news.iml
+spark-news/.project

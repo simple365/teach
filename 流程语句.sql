@@ -1,4 +1,39 @@
---
+-- 
+drop table if exists skew1;
+create table skew1 as 
+select id,val from (select  cast(rand()*8 as Integer) id ,rand() val from  app_center.stage_homeland_ac_originlog_lzo_dt limit 700000)
+union 
+select id,val from (select '' id ,rand() val from app_center.stage_homeland_ac_originlog_lzo_dt limit 300000);
+
+drop table if exists skew2;
+create table skew2 as 
+select id,val from (select  cast(rand()*8 as Integer) id ,rand() val from  app_center.stage_homeland_ac_originlog_lzo_dt limit 800000)
+union 
+select id,val from (select '' id ,rand() val from app_center.stage_homeland_ac_originlog_lzo_dt limit 200000);
+
+explain  
+select id,count(0) from 
+(select id,val from (select  cast(rand()*8 as Integer) id ,rand() val from  app_center.stage_homeland_ac_originlog_lzo_dt limit 800000)  union select id,val from (select '' id ,rand() val from app_center.stage_homeland_ac_originlog_lzo_dt limit 200000) )
+group by id;
+
+--order by 
+-- 查看倾斜里面的数据
+select * from (select row_number() over(order by id) rn ,* from skew1) t where t.rn>10000 and t.rn<10100;
+-- 查看非倾斜里面的数据
+select * from (select row_number() over(order by id) rn ,* from skew1) t where t.rn>800000 and t.rn<800100;
+
+
+
+
+== Physical Plan ==
+*Project [rn#91, id#94, val#95]
++- *Filter ((isnotnull(rn#91) && (rn#91 > 10000)) && (rn#91 < 10100))
+   +- Window [row_number() windowspecdefinition(id#94 ASC NULLS FIRST, ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS rn#91], [id#94 ASC NULLS FIRST]
+      +- *Sort [id#94 ASC NULLS FIRST], false, 0
+         +- Exchange SinglePartition
+            +- HiveTableScan [id#94, val#95], MetastoreRelation teach, skew1
+
+
 
 --计算新闻历史，需要找出新闻最大，最小，自动忽略null值，
 create temp view tmp_today_news as 
