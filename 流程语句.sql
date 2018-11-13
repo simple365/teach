@@ -1,4 +1,178 @@
--- 
+
+--app用户历史表
+drop table if exists mid_user_history_dt;
+CREATE EXTERNAL TABLE `mid_user_history_dt`(`user_id` string, `area` string,version_name string,lang string,source string,first_version string,`first_dat` string, first_source string,`last_dat` string)
+comment '用户历史表'
+PARTITIONED BY (`dt` string)
+location '/tmp/teach/mid_user_history_dt/';
+
+--初始化语句
+insert overwrite table mid_user_history_dt
+partition (dt)
+select user_id,
+area,
+version_name,
+lang,
+source,
+first_version,
+first_dat,
+first_source,
+last_dt,dt from (select 
+row_number() over (partition by user_id order by server_time) rn,
+user_id,
+area,
+version_name,
+lang,source,
+version_name first_version,
+dt first_dat,
+source first_source,
+dt last_dt,
+dt
+from ods_basedata_dt where dt='2018-11-03') t where rn=1;
+
+--比较两个用户表
+-- 先创建一个临时表，去掉重复数据
+drop table if exists tmp_user_today;
+create table tmp_user_today as 
+select user_id,
+area,
+version_name,
+lang,
+source,
+first_version,
+first_dat,
+first_source,
+last_dat,dt from (select 
+row_number() over (partition by user_id order by server_time) rn,
+user_id,
+area,
+version_name,
+lang,source,
+version_name first_version,
+dt first_dat,
+source first_source,
+dt last_dat,
+dt
+from ods_basedata_dt where dt='2018-11-08') t where rn=1;
+
+-- 再清洗
+add jar /home/hadoop/hive-function-1.0-SNAPSHOT.jar;
+create temporary function first_val as 'com.tom.udaf.FirstValueDateUDAF';
+set hive.exec.dynamic.partition.mode=nonstrict;
+
+use dw_weather;
+
+insert overwrite table mid_user_history_dt partition (dt)
+select user_id, 
+split(first_val(current_info,"desc"),",")[1] area,
+split(first_val(current_info,"desc"),",")[2] version_name,
+split(first_val(current_info,"desc"),",")[3] lang,
+split(first_val(current_info,"desc"),",")[4] source,
+split(first_val(old_info),",")[0] first_dat,
+split(first_val(old_info),",")[1] first_version,
+split(first_val(old_info),",")[2] first_source,
+split(first_val(current_info,"desc"),",")[0] last_dat,
+'2018-11-08' dt 
+from (
+select 
+user_id,
+concat_ws(',',last_dat,area,version_name,lang,source) current_info,
+concat_ws(',',first_dat,first_version,first_source) old_info
+from mid_user_history_dt where dt='2018-11-03'
+union
+select 
+user_id,
+concat_ws(',',last_dat,area,version_name,lang,source) current_info,
+concat_ws(',',first_dat,first_version,first_source) old_info 
+from tmp_user_today ) t group by user_id;
+
+
+-------------- 新闻每日展示点击详情表 -------------------
+drop table if exists mid_daily_news_dt;
+CREATE EXTERNAL TABLE `mid_daily_news_dt`(`news_id` string, lang string,version_name string,area string,total_display int,total_click int)
+PARTITIONED BY (`dt` string)
+location '/tmp/teach/mid_daily_news_dt/';
+
+-- 创建点击和展示的详细临时表
+drop table if exists tmp_news_display;
+create table tmp_news_display as 
+select newsid,lang,version_name,area,user_id from ods_display_dt 
+where dt='2018-11-08' and action='1';
+
+drop table if exists tmp_news_click;
+create table tmp_news_click as 
+select newsid,lang,version_name,area,user_id from ods_display_dt 
+where dt='2018-11-08' and action='2';
+
+-- 将数据插入
+insert overwrite table mid_daily_news_dt 
+partition(dt='2018-11-08')
+select t1.*,t2.total_click from (
+select newsid news_id,
+lang,version_name,area,count(distinct user_id) total_display from tmp_news_display 
+group by newsid,lang,version_name,area
+) t1 
+join 
+(select newsid news_id,
+lang,version_name,area,count(distinct user_id) total_click  from tmp_news_click 
+group by newsid,lang,version_name,area
+) t2
+on t1.news_id=t2.news_id and t1.lang=t2.lang and t1.version_name=t2.version_name;
+
+--计算新闻的总点击总展示
+drop table if exists mid_news_cal137_dt;
+create table mid_news_cal137_dt(
+`news_id` string, lang string,version_name string,area string,total_display1 int,total_click1 int,total_display3 int,total_click3 int,total_display7 int,total_click7 int)
+PARTITIONED BY (`dt` string)
+location '/tmp/teach/mid_news_cal137_dt/';
+
+
+
+insert overwrite table mid_news_cal137_dt
+partition(dt='2018-11-08')
+select t3.*,t2.total_display3,t2.total_click3,t1.total_display,t1.total_click from (
+select news_id,sum(total_display) total_display,sum(total_click) total_click 
+from mid_daily_news_dt where dt='2018-11-08' group by news_id
+) t1 right join
+(select news_id,sum(total_display) total_display3,sum(total_click) total_click3 
+from mid_daily_news_dt where dt>date_add('2018-11-08',-3) group by news_id) t2 
+on t1.news_id=t2.news_id
+right join
+(select news_id,lang,version_name,area,sum(total_display) total_display7,sum(total_click) total_click7 
+from mid_daily_news_dt where dt>date_add('2018-11-08',-7) group by news_id,lang,version_name,area) t3
+on t1.news_id=t3.news_id;
+ 
+-- 新闻总的计算
+
+ 
+
+
+-- 新闻历史表
+drop table if exists mid_news_history_dt;
+CREATE EXTERNAL TABLE `mid_news_history_dt`(`news_id` string, `area` string, `first_display_time` string,`last_display_time` string,`first_click_time` string,`last_click_time` string,total_display int,total_click int)
+PARTITIONED BY (`dt` string)
+location '/tmp/teach/mid_news_history_dt/';
+
+
+
+
+
+
+--活跃用户表
+drop table if exists mid_active_user_dt;
+CREATE EXTERNAL TABLE `mid_active_user_dt`(`user_id` string, `area` string)
+PARTITIONED BY (`dt` string)
+location '/tmp/teach/mid_active_user_dt/';
+
+
+
+
+
+
+
+
+
+-- 数据倾斜测试脚本
 drop table if exists skew1;
 create table skew1 as 
 select id,val from (select  cast(rand()*8 as Integer) id ,rand() val from  app_center.stage_homeland_ac_originlog_lzo_dt limit 700000)
@@ -34,6 +208,16 @@ select * from (select row_number() over(order by id) rn ,* from skew1) t where t
             +- HiveTableScan [id#94, val#95], MetastoreRelation teach, skew1
 
 
+select sum(news_id) news_total,sum(display)/sum(news_id) avg_display,sum(click)/sum(news_id) avg_click, sum(display)/sum(click) avg_rate
+from (
+select
+ t1.display display,
+ case when t2.click is not null then t2.click else 0 end click,
+ t1.news_id
+ from (select count(distinct user_id) display,news_id from user_display group by news_id) t1 left join
+(select count(distinct user_id) click,news_id from user_click group by news_id) t2 on
+t1.news_id=t2.news_id
+) t3
 			
 			
 
@@ -113,129 +297,6 @@ select forground_total/new_users fresh_rate,t1.dt from
 join 
 (select count(distinct uid) forground_total,dt from dw_foreground where dt='2018-09-26' group by dt) t2 
 on t1.dt=t2.dt;
-
-----+++++++++++++++++++++++数据流程基本语句
-add jar /home/hadoop/teach.jar;
-create temporary function base_analizer as 'com.test.BaseFieldUDF';
-create temporary function flat_analizer as 'com.test.EventnameUDTF';
-set hive.exec.dynamic.partition.mode=nonstrict;
-
-use teach;
-
-alter table stage_originlog_lzo_dt add if not exists partition (dt='2018-09-30') location '/tmp/teach/logs/2018-09-30';
-
-insert overwrite table ods_basedata_dt
-PARTITION (dt)
-select
-   user_id                      ,
-   area          ,
-   app_version               ,
-   app_time                      ,
-   event_name ,
-   event_json ,
-   server_time               ,
-   sdk_log.dt
- from
-(
-select
-split(base_analizer(line,'userId,area,appVersion,appTime'),'\t')[0]   as user_id                  ,
-split(base_analizer(line,'userId,area,appVersion,appTime'),'\t')[1]   as area      ,
-split(base_analizer(line,'userId,area,appVersion,appTime'),'\t')[2]   as app_version           ,
-split(base_analizer(line,'userId,area,appVersion,appTime'),'\t')[3]   as app_time                  ,
-split(base_analizer(line,'userId,area,appVersion,appTime'),'\t')[4]   as server_time                ,
-split(base_analizer(line,'userId,area,appVersion,appTime'),'\t')[5]   as ops            ,
-dt
-from stage_originlog_lzo_dt where dt='2018-09-30'
-) sdk_log lateral view flat_analizer(ops) tmp_k as event_name, event_json;
-
-
-
-
--- 新闻展示和点击表
-insert overwrite table ods_display_dt
-PARTITION (dt)
-select
-  `user_id` , 
-  `version_code` , 
-  `version_name` , 
-  `lang` , 
-  `source` , 
-  `os` , 
-  `area` , 
-  `model` , 
-  `brand` , 
-  `sdk_version` , 
-  `gmail` , 
-  `height_width` , 
-  `app_time` , 
-  `network` , 
-  `lng` , 
-  `lat` , 
-  `server_time` , 
-  `ip` , 
-  `event_name` , 
-  `event_json` 
- from
-(
-select
-user_id,
-area,
-app_version,
-app_time,
-get_json_object(event_json,'$.kv.action') action,
-get_json_object(event_json,'$.kv.newsId') news_id,
-server_time,
-dt
-from ods_basedata_dt where dt='2018-09-30' and event_name='display'
-) sdk_log;
-
--- 前台活跃明细表
-insert overwrite table ods_foreground_dt
-PARTITION (dt)
-select
-   user_id                      ,
-   area          ,
-   app_version               ,
-   app_time                      ,
-   create_time,
-   server_time               ,
-   sdk_log.dt
- from
-(
-select
-user_id                  ,
-area      ,
-app_version           ,
-app_time,
-get_json_object(event_json,'$.kv.createTime') create_time,
-server_time,
-dt
-from ods_basedata_dt where dt='2018-09-30' and event_name='foreground'
-) sdk_log;
-
---后台活跃明细表
-insert overwrite table ods_background_dt
-PARTITION (dt)
-select
-   user_id                      ,
-   area          ,
-   app_version               ,
-   app_time                      ,
-   create_time,
-   server_time               ,
-   sdk_log.dt
- from
-(
-select
-user_id                  ,
-area      ,
-app_version           ,
-app_time,
-get_json_object(event_json,'$.kv.createTime') create_time,
-server_time,
-dt
-from ods_basedata_dt where dt='2018-09-30' and event_name='background'
-) sdk_log;
 
 
 --每日新增：
