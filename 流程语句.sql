@@ -34,6 +34,11 @@ select * from (select row_number() over(order by id) rn ,* from skew1) t where t
             +- HiveTableScan [id#94, val#95], MetastoreRelation teach, skew1
 
 
+			
+			
+
+
+			
 
 --计算新闻历史，需要找出新闻最大，最小，自动忽略null值，
 create temp view tmp_today_news as 
@@ -150,14 +155,26 @@ from stage_originlog_lzo_dt where dt='2018-09-30'
 insert overwrite table ods_display_dt
 PARTITION (dt)
 select
-   user_id                      ,
-   area          ,
-   app_version               ,
-   app_time                      ,
-   action,
-   news_id,
-   server_time               ,
-   sdk_log.dt
+  `user_id` , 
+  `version_code` , 
+  `version_name` , 
+  `lang` , 
+  `source` , 
+  `os` , 
+  `area` , 
+  `model` , 
+  `brand` , 
+  `sdk_version` , 
+  `gmail` , 
+  `height_width` , 
+  `app_time` , 
+  `network` , 
+  `lng` , 
+  `lat` , 
+  `server_time` , 
+  `ip` , 
+  `event_name` , 
+  `event_json` 
  from
 (
 select

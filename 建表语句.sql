@@ -83,7 +83,7 @@ split(base_analizer(line,'uid,vc,vn,l,sr,os,ar,md,ba,sv,g,hw,nw,ln,la,t'),'\t')[
 split(base_analizer(line,'uid,vc,vn,l,sr,os,ar,md,ba,sv,g,hw,nw,ln,la,t'),'\t')[17]  as server_time,
 split(base_analizer(line,'uid,vc,vn,l,sr,os,ar,md,ba,sv,g,hw,nw,ln,la,t'),'\t')[18]  as ip,
 dt 
-from stage_originlog_lzo_dt where dt='2018-11-03'  and base_analizer(line,'uid,vc,vn,l,sr,os,ar,md,ba,sv,g,hw,nw,ln,la,t')<>'' 
+from stage_originlog_lzo_dt where dt='2018-11-08'  and base_analizer(line,'uid,vc,vn,l,sr,os,ar,md,ba,sv,g,hw,nw,ln,la,t')<>'' 
 ) sdk_log lateral view flat_analizer(ops) tmp_k as event_name, event_json;
 
 uid,vc,vn,l,sr,os,ar,md,ba,sv,g,hw,nw,ln,la,t
@@ -322,9 +322,124 @@ from ods_basedata_dt where dt='2018-11-03' and event_name='notification';
 
 -- 后台活跃表
 drop table if exists ods_background_dt;
-CREATE EXTERNAL TABLE `ods_background_dt`(`user_id` string, `version_code` string, `version_name` string, `lang` string, `source` string, `os` string, `area` string, `model` string,`brand` string, `sdk_version` string, `gmail` string, `height_width` string,  `network` string, `lng` string, `lat` string, `app_time` string,action string,noti_type string,ap_time string,content string,`server_time` string,`ip` string)
+CREATE EXTERNAL TABLE `ods_background_dt`(`user_id` string, `version_code` string, `version_name` string, `lang` string, `source` string, `os` string, `area` string, `model` string,`brand` string, `sdk_version` string, `gmail` string, `height_width` string,  `network` string, `lng` string, `lat` string, `app_time` string,active_source string,`server_time` string,`ip` string)
 PARTITIONED BY (dt string)
 location '/tmp/teach/ods_background_dt/';
+
+insert overwrite table ods_background_dt
+PARTITION (dt)
+select 
+user_id,
+version_code,
+version_name,
+lang,
+source,
+os,
+area,
+model,
+brand,
+sdk_version,
+gmail,
+height_width,
+network,
+lng,
+lat,
+app_time,
+get_json_object('event_json','$.kv.active_source') active_source,
+server_time,
+ip,
+dt
+from ods_basedata_dt where dt='2018-11-03' and event_name='active_background';
+
+
+--app用户历史表
+drop table if exists mid_user_history_dt;
+CREATE EXTERNAL TABLE `mid_user_history_dt`(`user_id` string, `area` string,version_name string,lang string,source string,first_version string,`first_dat` string, first_source string,`last_dat` string)
+comment '用户历史表'
+PARTITIONED BY (`dt` string)
+location '/tmp/teach/mid_user_history_dt/';
+
+--初始化语句
+insert overwrite table mid_user_history_dt
+partition (dt)
+select user_id,
+area,
+version_name,
+lang,
+source,
+first_version,
+first_dat,
+first_source,
+last_dt,dt from (select 
+row_number() over (partition by user_id order by server_time) rn,
+user_id,
+area,
+version_name,
+lang,source,
+version_name first_version,
+dt first_dat,
+source first_source,
+dt last_dt,
+dt
+from ods_basedata_dt where dt='2018-11-03') t where rn=1;
+
+--比较两个用户表
+-- 先创建一个临时表，去掉重复数据
+drop table if exists tmp_user_today;
+create table tmp_user_today as 
+select user_id,
+area,
+version_name,
+lang,
+source,
+first_version,
+first_dat,
+first_source,
+last_dat,dt from (select 
+row_number() over (partition by user_id order by server_time) rn,
+user_id,
+area,
+version_name,
+lang,source,
+version_name first_version,
+dt first_dat,
+source first_source,
+dt last_dat,
+dt
+from ods_basedata_dt where dt='2018-11-08') t where rn=1;
+
+-- 再清洗
+add jar /home/hadoop/hive-function-1.0-SNAPSHOT.jar;
+create temporary function first_val as 'com.tom.udaf.FirstValueDateUDAF';
+set hive.exec.dynamic.partition.mode=nonstrict;
+
+use dw_weather;
+
+insert overwrite table mid_user_history_dt partition (dt)
+select user_id, 
+split(first_val(current_info,"desc"),",")[0] last_dat,
+split(first_val(current_info,"desc"),",")[1] area,
+split(first_val(current_info,"desc"),",")[2] version_name,
+split(first_val(current_info,"desc"),",")[3] lang,
+split(first_val(current_info,"desc"),",")[4] source,
+split(first_val(old_info),",")[0] first_dat,
+split(first_val(old_info),",")[1] first_version,
+split(first_val(old_info),",")[2] first_source,
+'2018-11-08' dt 
+from (
+select 
+user_id,
+concat_ws(',',last_dat,area,version_name,lang,source) current_info,
+concat_ws(',',first_dat,first_version,first_source) old_info
+from mid_user_history_dt where dt='2018-11-03'
+union
+select 
+user_id,
+concat_ws(',',last_dat,area,version_name,lang,source) current_info,
+concat_ws(',',first_dat,first_version,first_source) old_info 
+from tmp_user_today ) t group by user_id;
+
+
 
 
 
@@ -340,13 +455,6 @@ CREATE EXTERNAL TABLE `mid_news_history_dt`(`news_id` string, `area` string, `fi
 PARTITIONED BY (`dt` string)
 location '/tmp/teach/mid_news_history_dt/';
 
-
-
---app用户历史表
-drop table if exists mid_user_history_dt;
-CREATE EXTERNAL TABLE `mid_user_history_dt`(`user_id` string, `area` string, app_version string,`first_dat` string,`last_dat` string)
-PARTITIONED BY (`dt` string)
-location '/tmp/teach/mid_user_history_dt/';
 
 
 
