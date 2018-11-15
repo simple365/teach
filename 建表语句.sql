@@ -114,16 +114,16 @@ network,
 lng,
 lat,
 app_time,
-get_json_object('event_json','$.kv.action') action,
-get_json_object('event_json','$.kv.newsid') newsid,
-get_json_object('event_json','$.kv.place') place,
-get_json_object('event_json','$.kv.showtype') showtype,
-get_json_object('event_json','$.kv.copyright') copyright,
-get_json_object('event_json','$.kv.content_provider') content_provider,
-get_json_object('event_json','$.kv.newstype') newstype,
-get_json_object('event_json','$.kv.extend1') extend1,
-get_json_object('event_json','$.kv.extend2') extend2,
-get_json_object('event_json','$.kv.category') category,
+get_json_object(event_json,'$.kv.action') action,
+get_json_object(event_json,'$.kv.newsid') newsid,
+get_json_object(event_json,'$.kv.place') place,
+get_json_object(event_json,'$.kv.showtype') showtype,
+get_json_object(event_json,'$.kv.copyright') copyright,
+get_json_object(event_json,'$.kv.content_provider') content_provider,
+get_json_object(event_json,'$.kv.newstype') newstype,
+get_json_object(event_json,'$.kv.extend1') extend1,
+get_json_object(event_json,'$.kv.extend2') extend2,
+get_json_object(event_json,'$.kv.category') category,
 server_time,
 ip,
 dt
@@ -274,16 +274,16 @@ network,
 lng,
 lat,
 app_time,
-get_json_object('event_json','$.kv.entry') entry,
-get_json_object('event_json','$.kv.open_ad_type') open_ad_type,
-get_json_object('event_json','$.kv.action') action,
-get_json_object('event_json','$.kv.loading_time') loading_time,
-get_json_object('event_json','$.kv.detail') detail,
-get_json_object('event_json','$.kv.extend1') extend1,
+get_json_object(event_json,'$.kv.entry') entry,
+get_json_object(event_json,'$.kv.open_ad_type') open_ad_type,
+get_json_object(event_json,'$.kv.action') action,
+get_json_object(event_json,'$.kv.loading_time') loading_time,
+get_json_object(event_json,'$.kv.detail') detail,
+get_json_object(event_json,'$.kv.extend1') extend1,
 server_time,
 ip,
 dt
-from ods_basedata_dt where dt='2018-11-03' and event_name='start';
+from ods_basedata_dt where dt='2018-11-08' and event_name='start';
 
 -- 消息通知
 drop table if exists ods_notification_dt;
@@ -345,11 +345,11 @@ network,
 lng,
 lat,
 app_time,
-get_json_object('event_json','$.kv.active_source') active_source,
+get_json_object(event_json,'$.kv.active_source') active_source,
 server_time,
 ip,
 dt
-from ods_basedata_dt where dt='2018-11-03' and event_name='active_background';
+from ods_basedata_dt where dt='2018-11-08' and event_name='active_background';
 
 
 ---- mongodb 

@@ -120,16 +120,6 @@ group by newsid,lang,version_name,area
 on t1.news_id=t2.news_id and t1.lang=t2.lang and t1.version_name=t2.version_name;
 
 --计算新闻的总点击总展示
-drop table if exists mid_news_cal137_dt;
-create table mid_news_cal137_dt(
-`news_id` string, lang string,version_name string,area string,total_display1 int,total_click1 int,total_display3 int,total_click3 int,total_display7 int,total_click7 int)
-PARTITIONED BY (`dt` string)
-location '/tmp/teach/mid_news_cal137_dt/';
-
-
-
-insert overwrite table mid_news_cal137_dt
-partition(dt='2018-11-08')
 select t3.*,t2.total_display3,t2.total_click3,t1.total_display,t1.total_click from (
 select news_id,sum(total_display) total_display,sum(total_click) total_click 
 from mid_daily_news_dt where dt='2018-11-08' group by news_id
@@ -138,14 +128,59 @@ from mid_daily_news_dt where dt='2018-11-08' group by news_id
 from mid_daily_news_dt where dt>date_add('2018-11-08',-3) group by news_id) t2 
 on t1.news_id=t2.news_id
 right join
-(select news_id,lang,version_name,area,sum(total_display) total_display7,sum(total_click) total_click7 
-from mid_daily_news_dt where dt>date_add('2018-11-08',-7) group by news_id,lang,version_name,area) t3
+(select news_id,sum(total_display) total_display7,sum(total_click) total_click7 
+from mid_daily_news_dt where dt>date_add('2018-11-08',-7) group by news_id) t3
 on t1.news_id=t3.news_id;
  
--- 新闻总的计算
+--计算新闻的地区总点击总展示
+select t3.*,t2.total_display3,t2.total_click3,t1.total_display,t1.total_click from (
+select news_id,area,sum(total_display) total_display,sum(total_click) total_click 
+from mid_daily_news_dt where dt='2018-11-08' group by news_id,area
+) t1 right join
+(select news_id,area,sum(total_display) total_display3,sum(total_click) total_click3 
+from mid_daily_news_dt where dt>date_add('2018-11-08',-3) group by news_id,area) t2 
+on t1.news_id=t2.news_id and t1.area=t2.area 
+right join
+(select news_id,area,sum(total_display) total_display7,sum(total_click) total_click7 
+from mid_daily_news_dt where dt>date_add('2018-11-08',-7) group by news_id,area) t3
+on t1.news_id=t3.news_id and t1.area=t2.area;
 
- 
+--前台，后台活跃用户数统计(日活，月活)
+drop table if exists dm_active_dt;
+create table dm_active_dt (
+day_foreground int,
+month_foreground int,
+day_background int,
+month_background int
+)PARTITIONED BY (`dt` string)
+location '/tmp/teach/dm_active_dt/';
 
+insert overwrite table dm_active_dt
+partition(dt) 
+select t1.day_foreground,t3.month_foreground,t2.day_background,t4.month_background,t1.dt from (
+select count(distinct user_id) day_foreground,dt from ods_start_dt where dt='2018-11-08' and action='1' group by dt
+) t1 join  
+(select count(distinct user_id) month_foreground from ods_start_dt where dt>='2018-11-01' and dt<='2018-11-08' and action='1') t3 on 1=1
+join 
+(select count(distinct user_id) day_background,dt from ods_background_dt where dt='2018-11-08' group by dt) t2 on t1.dt=t2.dt
+join 
+(select count(distinct user_id) month_background from ods_background_dt where dt>='2018-11-01' and dt<='2018-11-08' ) t4 on 1=1;
+
+-- 用户版本分布
+drop table if exists dm_version_allocation;
+create table dm_version_allocation (
+version_name string,
+user_num_fore int,
+user_num_back int
+)PARTITIONED BY (`dt` string)
+location '/tmp/teach/dm_version_allocation/';
+
+insert overwrite table dm_version_allocation
+partition(dt='2018-11-08') 
+select t1.*,t2.user_num_back from (
+select version_name,count(distinct user_id) user_num_fore from ods_start_dt where dt='2018-11-08' and action='1' group by version_name
+) t1 join  
+(select version_name,count(distinct user_id) user_num_back from ods_background_dt where dt='2018-11-08' group by version_name) t2 on t1.version_name=t2.version_name order by t1.version_name;
 
 -- 新闻历史表
 drop table if exists mid_news_history_dt;
