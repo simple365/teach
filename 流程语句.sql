@@ -289,7 +289,45 @@ union all
 select news_id,area,first_display_time,last_display_time,first_click_time,last_click_time,total_display,total_click from mid_news_history_dt where dt='2018-09-29'
 ) group by news_id,area;
 
+-- 计算每日新闻展现用户数，展现次数，
+select user_num,display_num,display_num/(user_num*1.0) rate from (
+select count(distinct user_id) user_num from ods_display_dt where dt='2018-11-03' ) t1 cross join 
+(select count(0) display_num from ods_display_dt where dt='2018-11-03' ) t2;
+ 
 
+-- 曝光新闻次数,人均曝光新闻次数
+select news_display_num,user_num,news_display_num/user_num avg_display_news from (
+select count(0) news_display_num from ods_display_dt where dt='2018-11-08' and action='1') t1 cross join
+(select count(distinct user_id) user_num from ods_display_dt where dt='2018-11-03' and action='1') t2
+
+-- 人均曝光新闻条数
+select news_num,user_num,news_num/user_num avg_display_news from (
+select count(distinct news_id) news_num from ods_display_dt where dt='2018-11-08' and action='1') t1 cross join
+(select count(distinct user_id) user_num from ods_display_dt where dt='2018-11-03' and action='1') t2
+
+-- 点击新闻用户数
+select count(distinct user_id) click_user_num from ods_display_dt where dt='2018-11-03' and action='2';
+
+-- 点击新闻条数
+select count(distinct news_id) click_news_num from ods_display_dt where dt='2018-11-03' and action='2';
+
+-- 点击新闻次数
+select count(0) click_news_times from ods_display_dt where dt='2018-11-03' and action='2';
+
+-- 人均点击新闻次数
+select click_user_num,click_news_times,(click_news_times*1.0)/click_user_num avg_click_times from 
+(select count(distinct user_id) click_user_num from ods_display_dt where dt='2018-11-03' and action='2') t1 cross join
+(select count(0) click_news_times from ods_display_dt where dt='2018-11-03' and action='2') t2 
+
+
+-- 人均点击新闻量
+select click_user_num,click_news_num,click_news_num/(click_user_num*1.0) avg_click_amount from 
+(select count(distinct user_id) click_user_num from ods_display_dt where dt='2018-11-03' and action='2') t1 cross join
+(select count(distinct news_id) click_news_num from ods_display_dt where dt='2018-11-03' and action='2') t2 
+
+-- 当天新闻总点击率
+select display_num,click_num,display_num/click_num from 
+(select count(distinct user_id) click_news_num from ods_display_dt where dt='2018-11-03' and action='2') t1 cross join 
 
 --- 计算用户历史的脚本
 insert overwrite table mid_user_history_dt 
@@ -299,6 +337,8 @@ select distinct user_id,area,dt first_dat,dt last_dat from ods_basedata_dt where
 union
 select user_id,area,app_version,first_dat,last_dat from mid_user_history_dt where dt='2018-09-29' 
 )group by user_id,area;
+
+-- 当天所有新闻总点击率 
 
 
 -- 7天内产生点击的用户为活跃用户
@@ -315,6 +355,7 @@ select t1.forground_total,t2.background_total,t1.dt from
 (select count(distinct uid) forground_total,dt from dw_foreground where dt='2018-09-25' group by dt) t1
 join (select count(distinct uid) background_total,dt from dw_background where dt='2018-09-25' group by dt) t2
 on t1.dt=t2.dt ;
+
 
 --沉默用户统计
 select count(distinct user_id) num  from mid_user_history_dt
