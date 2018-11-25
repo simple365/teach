@@ -258,7 +258,17 @@ public class ReadNewsStream {
                 scoreProducer.flush();
             });
 //       最后将新闻排序,取前1000条，写入kafka，传给后台
-            df=sparkSession.sql("select news_id from tmp_news_score order by score limit 1000");
+            df=sparkSession.sql("select news_id from tmp_news_score order by score limit 1000");Properties props = new Properties();
+            props.put("bootstrap.servers", serverPropsBroadcast.getValue().getProperty("kafka.broker.list"));
+            props.put("acks", "all");
+            props.put("retries", 0);
+            props.put("batch.size", 16384);
+            props.put("linger.ms", 1);
+            props.put("buffer.memory", 33554432);
+            props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+            props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+            KafkaProducer<String, String> scoreProducer = new KafkaProducer<>(props);
+            scoreProducer.send(StringUtils.join(df.collect(),","));
         }
     }
 
