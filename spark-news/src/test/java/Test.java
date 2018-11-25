@@ -8,7 +8,16 @@ import java.util.*;
 
 public class Test {
     public static void main(String[] args) throws IOException {
-        System.out.println(System.currentTimeMillis()/1000-36*24*60*60);
+        List<String> res=new ArrayList<>();
+        res.add("sfdsd");
+        res.add("6f43");
+        res.add("345");
+        res.forEach(row->{
+            row.substring(2);
+        });
+        res.forEach(row ->{
+            System.out.println(row);
+        });
     }
 }
 
