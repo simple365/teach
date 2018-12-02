@@ -2,6 +2,7 @@ package com.teach.business;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -164,15 +165,15 @@ public class ReadNewsStream {
             Long timestam = Long.parseLong(val.split("\\|")[0]);
             JsonNode jsonNode = objectMapper.readTree(val.split("\\|")[1]);
             //      用户id，news id，area，时间
-            String userid = jsonNode.get("he").get("userId").asText();
-            String area = jsonNode.get("he").get("area").asText();
+            String userid = jsonNode.get("cm").get("uid").asText();
+            String area = jsonNode.get("cm").get("ar").asText();
             Iterator<JsonNode> iterater = jsonNode.get("et").iterator();
             List<Row> results = new ArrayList<>();
             while (iterater.hasNext()) {
                 JsonNode event = iterater.next();
-                if ("display".equals(event.get("eventName").asText())) {
+                if ("display".equals(event.get("en").asText())) {
                     int action = event.get("kv").get("action").asInt();
-                    String newsId = event.get("kv").get("newsId").asText();
+                    String newsId = event.get("kv").get("newsid").asText();
                     Row row = RowFactory.create(action, area, newsId, userid, timestam);
                     results.add(row);
                 }
@@ -236,7 +237,7 @@ public class ReadNewsStream {
             df.show();
             df.registerTempTable("tmp_news_score");
 
-            //生产者发送消息
+            //计算结果写入kafka，另一端消费kafka写入数据库保存记录
             df.foreachPartition((ForeachPartitionFunction<Row>) (iterator)->{
                 Properties props = new Properties();
                 props.put("bootstrap.servers", serverPropsBroadcast.getValue().getProperty("kafka.broker.list"));
@@ -257,21 +258,10 @@ public class ReadNewsStream {
                 }
                 scoreProducer.flush();
             });
-//       最后将新闻排序,取前1000条，写入kafka，传给后台
-            df=sparkSession.sql("select news_id from tmp_news_score order by score limit 1000");Properties props = new Properties();
-            props.put("bootstrap.servers", serverPropsBroadcast.getValue().getProperty("kafka.broker.list"));
-            props.put("acks", "all");
-            props.put("retries", 0);
-            props.put("batch.size", 16384);
-            props.put("linger.ms", 1);
-            props.put("buffer.memory", 33554432);
-            props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-            props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-            KafkaProducer<String, String> scoreProducer = new KafkaProducer<>(props);
-            scoreProducer.send(StringUtils.join(df.collect(),","));
+//       最后将新闻排序,取前1000条，写入mysql，传给后台
+            df=sparkSession.sql("select news_id from tmp_news_score order by score limit 1000");
+            String rankNews=StringUtils.join(df.collectAsList(),",");
+            logger.info("测试结果是"+rankNews);
         }
     }
-
-
-
 }

@@ -374,6 +374,8 @@ display()
 
 -- 数据量并不大，一天几百万条左右
 最近24小时，一个用户，点击多次，算一个点击，一个用户展示多次，算一个展示。
+
+-- 用户24小时点击记录
 drop table if exists news_display;
 create table news_display(
 area varchar(20),
@@ -383,6 +385,7 @@ time_stam long
 );
 alter table news_display add unique(area,news_id,user_id);
 
+--用户24小时展示记录
 drop table if exists news_click;
 create table news_click(
 area varchar(20),
@@ -392,6 +395,7 @@ time_stam long
 );
 alter table news_click add unique(area,news_id,user_id);
 
+-- 存临时数据
 drop table if exists tmp_display_click;
 create table tmp_display_click(
 action int(2),
