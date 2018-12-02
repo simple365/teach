@@ -264,7 +264,4 @@ public class ReadNewsStream {
             logger.info("测试结果是"+rankNews);
         }
     }
-
-
-
 }
