@@ -134,7 +134,7 @@ from ods_basedata_dt where dt='2018-12-12' and event_name='display';
 drop table if exists ods_newsdetailpro_dt;
 CREATE EXTERNAL TABLE `ods_newsdetailpro_dt`(`user_id` string, `version_code` string, `version_name` string, `lang` string, `source` string, `os` string, `area` string, `model` string,`brand` string, `sdk_version` string, `gmail` string, `height_width` string,  `network` string, `lng` string, `lat` string, `app_time` string,entry string,action string,newsid string,showtype string,copyright string,content_provider string,newstype string,show_style string,news_staytime string,loading_time string,type1 string,category string,content string,`server_time` string, `ip` string)
 PARTITIONED BY (dt string)
-location '/tmp/teach/ods_newsdetailpro_dt/';
+location '/tmp/weather/ods_newsdetailpro_dt/';
 
 insert overwrite table ods_newsdetailpro_dt
 PARTITION (dt)
@@ -177,7 +177,7 @@ from ods_basedata_dt where dt='2018-12-12' and event_name='newsdetailpro';
 drop table if exists ods_loading_dt;
 CREATE EXTERNAL TABLE `ods_loading_dt`(`user_id` string, `version_code` string, `version_name` string, `lang` string, `source` string, `os` string, `area` string, `model` string,`brand` string, `sdk_version` string, `gmail` string, `height_width` string,  `network` string, `lng` string, `lat` string, `app_time` string,action string,loading_time string,loading_way string,extend1 string,extend2 string,load_type string,type1 string,`server_time` string,`ip` string)
 PARTITIONED BY (dt string)
-location '/tmp/teach/ods_loading_dt/';
+location '/tmp/weather/ods_loading_dt/';
 
 insert overwrite table ods_loading_dt
 PARTITION (dt)
@@ -208,14 +208,14 @@ get_json_object('event_json','$.kv.type1') type1,
 server_time,
 ip,
 dt
-from ods_basedata_dt where dt='2018-11-03' and event_name='loading';
+from ods_basedata_dt where dt='2018-12-12' and event_name='loading';
 
 
 --广告
 drop table if exists ods_ad_dt;
 CREATE EXTERNAL TABLE `ods_ad_dt`(`user_id` string, `version_code` string, `version_name` string, `lang` string, `source` string, `os` string, `area` string, `model` string,`brand` string, `sdk_version` string, `gmail` string, `height_width` string,  `network` string, `lng` string, `lat` string, `app_time` string,entry string,action string,content string,detail string,ad_source string,behavior string,newstype string,show_style string,`server_time` string,`ip` string)
 PARTITIONED BY (dt string)
-location '/tmp/teach/ods_ad_dt/';
+location '/tmp/weather/ods_ad_dt/';
 
 insert overwrite table ods_ad_dt
 PARTITION (dt)
@@ -247,13 +247,13 @@ get_json_object('event_json','$.kv.show_style') show_style,
 server_time,
 ip,
 dt
-from ods_basedata_dt where dt='2018-11-03' and event_name='ad';
+from ods_basedata_dt where dt='2018-12-12' and event_name='ad';
 
 -- 应用启动
 drop table if exists ods_start_dt;
 CREATE EXTERNAL TABLE `ods_start_dt`(`user_id` string, `version_code` string, `version_name` string, `lang` string, `source` string, `os` string, `area` string, `model` string,`brand` string, `sdk_version` string, `gmail` string, `height_width` string,  `network` string, `lng` string, `lat` string, `app_time` string,entry string,open_ad_type string,action string,loading_time string,detail string,extend1 string,`server_time` string,`ip` string)
 PARTITIONED BY (dt string)
-location '/tmp/teach/ods_start_dt/';
+location '/tmp/weather/ods_start_dt/';
 
 insert overwrite table ods_start_dt
 PARTITION (dt)
@@ -283,13 +283,13 @@ get_json_object(event_json,'$.kv.extend1') extend1,
 server_time,
 ip,
 dt
-from ods_basedata_dt where dt='2018-11-08' and event_name='start';
+from ods_basedata_dt where dt='2018-12-12' and event_name='start';
 
 -- 消息通知
 drop table if exists ods_notification_dt;
 CREATE EXTERNAL TABLE `ods_notification_dt`(`user_id` string, `version_code` string, `version_name` string, `lang` string, `source` string, `os` string, `area` string, `model` string,`brand` string, `sdk_version` string, `gmail` string, `height_width` string,  `network` string, `lng` string, `lat` string, `app_time` string,action string,noti_type string,ap_time string,content string,`server_time` string,`ip` string)
 PARTITIONED BY (dt string)
-location '/tmp/teach/ods_notification_dt/';
+location '/tmp/weather/ods_notification_dt/';
 
 insert overwrite table ods_notification_dt
 PARTITION (dt)
@@ -317,14 +317,14 @@ get_json_object('event_json','$.kv.content') content,
 server_time,
 ip,
 dt
-from ods_basedata_dt where dt='2018-11-03' and event_name='notification';
+from ods_basedata_dt where dt='2018-12-12' and event_name='notification';
 
 
 -- 后台活跃表
 drop table if exists ods_background_dt;
 CREATE EXTERNAL TABLE `ods_background_dt`(`user_id` string, `version_code` string, `version_name` string, `lang` string, `source` string, `os` string, `area` string, `model` string,`brand` string, `sdk_version` string, `gmail` string, `height_width` string,  `network` string, `lng` string, `lat` string, `app_time` string,active_source string,`server_time` string,`ip` string)
 PARTITIONED BY (dt string)
-location '/tmp/teach/ods_background_dt/';
+location '/tmp/weather/ods_background_dt/';
 
 insert overwrite table ods_background_dt
 PARTITION (dt)
@@ -349,7 +349,7 @@ get_json_object(event_json,'$.kv.active_source') active_source,
 server_time,
 ip,
 dt
-from ods_basedata_dt where dt='2018-11-08' and event_name='active_background';
+from ods_basedata_dt where dt='2018-12-12' and event_name='active_background';
 
 
 ---- mongodb 
