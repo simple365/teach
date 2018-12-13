@@ -1,13 +1,13 @@
 ------------ sql 相关
 
 
-create schema teach;
-use teach;
+create schema dw_weather;
+use dw_weather;
 
 -- 原始日志表
 
 drop table if exists stage_originlog_lzo_dt;
-CREATE EXTERNAL TABLE `teach`.`stage_originlog_lzo_dt`(`line` string)
+CREATE EXTERNAL TABLE `stage_originlog_lzo_dt`(`line` string)
 PARTITIONED BY (`dt` string)
 ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe'
 WITH SERDEPROPERTIES (
@@ -16,20 +16,20 @@ WITH SERDEPROPERTIES (
 STORED AS
   INPUTFORMAT 'com.hadoop.mapred.DeprecatedLzoTextInputFormat'
   OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat'
-LOCATION '/tmp/teach/logs/weather';
+LOCATION '/tmp/flume/weather';
 
-alter table stage_originlog_lzo_dt add partition(dt='2018-11-03') location '/tmp/flume/logs/weather/2018-11-03';
+alter table stage_originlog_lzo_dt add partition(dt='2018-12-12') location '/tmp/flume/weather/2018-12-12';
 
 
 -- 基础表
 drop table if exists ods_basedata_dt;
 CREATE EXTERNAL TABLE `ods_basedata_dt`(`user_id` string, `version_code` string, `version_name` string, `lang` string, `source` string, `os` string, `area` string, `model` string,`brand` string, `sdk_version` string, `gmail` string, `height_width` string,  `network` string, `lng` string, `lat` string, `app_time` string, `event_name` string, `event_json` string,`server_time` string, `ip` string)
 PARTITIONED BY (`dt` string)
-location '/tmp/teach/ods_basedata_dt/';
+location '/tmp/weather/ods_basedata_dt/';
 
 use dw_weather;
 
-alter table stage_originlog_lzo_dt add partition(dt='2018-12-12') location '/tmp/flume/logs/weather/2018-11-12';
+alter table stage_originlog_lzo_dt add partition(dt='2018-11-03') location '/tmp/flume/weather/2018-11-03';
 add jar /home/hdfs/hive-function-1.0-SNAPSHOT.jar;
 create temporary function base_analizer as 'com.tom.udf.BaseFieldUDF';
 create temporary function flat_analizer as 'com.tom.udtf.EventJsonUDTF';
@@ -83,17 +83,17 @@ split(base_analizer(line,'uid,vc,vn,l,sr,os,ar,md,ba,sv,g,hw,nw,ln,la,t'),'\t')[
 split(base_analizer(line,'uid,vc,vn,l,sr,os,ar,md,ba,sv,g,hw,nw,ln,la,t'),'\t')[17]  as server_time,
 split(base_analizer(line,'uid,vc,vn,l,sr,os,ar,md,ba,sv,g,hw,nw,ln,la,t'),'\t')[18]  as ip,
 dt 
-from stage_originlog_lzo_dt where dt='2018-11-08'  and base_analizer(line,'uid,vc,vn,l,sr,os,ar,md,ba,sv,g,hw,nw,ln,la,t')<>'' 
+from stage_originlog_lzo_dt where dt='2018-12-12'  and base_analizer(line,'uid,vc,vn,l,sr,os,ar,md,ba,sv,g,hw,nw,ln,la,t')<>'' 
 ) sdk_log lateral view flat_analizer(ops) tmp_k as event_name, event_json;
 
-uid,vc,vn,l,sr,os,ar,md,ba,sv,g,hw,nw,ln,la,t
+ 
 
 
 -- 新闻展示表
 drop table if exists ods_display_dt;
 CREATE EXTERNAL TABLE `ods_display_dt`(`user_id` string, `version_code` string, `version_name` string, `lang` string, `source` string, `os` string, `area` string, `model` string,`brand` string, `sdk_version` string, `gmail` string, `height_width` string,  `network` string, `lng` string, `lat` string, `app_time` string,action string,newsid string,place string,showtype string,copyright string,content_provider string,newstype string,extend1 string,extend2 string,category string,`server_time` string, `ip` string)
 PARTITIONED BY (dt string)
-location '/tmp/teach/ods_display_dt/';
+location '/tmp/weather/ods_display_dt/';
 
 insert overwrite table ods_display_dt
 PARTITION (dt)
@@ -127,7 +127,7 @@ get_json_object(event_json,'$.kv.category') category,
 server_time,
 ip,
 dt
-from ods_basedata_dt where dt='2018-11-08' and event_name='display';
+from ods_basedata_dt where dt='2018-12-12' and event_name='display';
 
 
 -- 新闻详情页
@@ -171,7 +171,7 @@ get_json_object('event_json','$.kv.content') content,
 server_time,
 ip,
 dt
-from ods_basedata_dt where dt='2018-11-03' and event_name='newsdetailpro';
+from ods_basedata_dt where dt='2018-12-12' and event_name='newsdetailpro';
 
 -- 新闻列表页
 drop table if exists ods_loading_dt;
