@@ -395,7 +395,7 @@ time_stam long
 );
 alter table news_click add unique(area,news_id,user_id);
 
--- 存临时数据
+-- 存临时插入的数据
 drop table if exists tmp_display_click;
 create table tmp_display_click(
 action int(2),
