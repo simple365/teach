@@ -29,8 +29,8 @@ location '/tmp/teach/ods_basedata_dt/';
 
 use dw_weather;
 
-alter table stage_originlog_lzo_dt add partition(dt='2018-11-03') location '/tmp/flume/logs/weather/2018-11-03';
-add jar /home/hadoop/hive-function-1.0-SNAPSHOT.jar;
+alter table stage_originlog_lzo_dt add partition(dt='2018-12-12') location '/tmp/flume/logs/weather/2018-11-12';
+add jar /home/hdfs/hive-function-1.0-SNAPSHOT.jar;
 create temporary function base_analizer as 'com.tom.udf.BaseFieldUDF';
 create temporary function flat_analizer as 'com.tom.udtf.EventJsonUDTF';
 set hive.exec.dynamic.partition.mode=nonstrict;

@@ -5,7 +5,7 @@
 	<groupId>com.tom.news</groupId>
 	<artifactId>log-collector</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<description>用来模拟收集日志</description>
+	<description>用来springboot生成的日志</description>
 	<properties>
 		<slf4j.version>1.7.20</slf4j.version>
 		<logback.version>1.0.7</logback.version>
