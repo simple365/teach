@@ -1,2 +1,15 @@
 scp -r /mnt/apps/hadoop-2.7.7/etc/ dn129:/mnt/apps/hadoop-2.7.7/
 scp -r /mnt/apps/hadoop-2.7.7/etc/ dn130:/mnt/apps/hadoop-2.7.7/
+
+
+spark-submit \
+ --class com.tom.spark.SparkNewsCaculator \
+ --master yarn \
+ --deploy-mode cluster \
+ --queue migsz \
+ --driver-memory 1G \
+ --executor-memory 1G \
+ --num-executors 2 \
+ --executor-cores 1 \
+ --conf spark.shuffle.io.maxRetries=6 
+ spark-news.jar

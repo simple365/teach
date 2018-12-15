@@ -153,6 +153,7 @@ public class ReadNewsStream {
      * @param serverProps
      */
     static private void executeData(JavaRDD<ConsumerRecord<String, String>> rdd, SparkSession sparkSession, Properties serverProps) {
+        logger.info("样本是"+rdd.take(2));
         //1.计算威尔逊热度
         JavaRDD<Row> rowRDD = rdd.filter(stringStringConsumerRecord -> {
             /*过滤出来只有点击的日志*/
@@ -162,8 +163,8 @@ public class ReadNewsStream {
             /*组装成新闻的点击格式*/
             String val = stringStringConsumerRecord.value();
             ObjectMapper objectMapper = new ObjectMapper();
-            Long timestam = Long.parseLong(val.split("\\|")[0]);
-            JsonNode jsonNode = objectMapper.readTree(val.split("\\|")[1]);
+            Long timestam = Long.parseLong(val.split("\\|")[1]);
+            JsonNode jsonNode = objectMapper.readTree(val.split("\\|")[2]);
             //      用户id，news id，area，时间
             String userid = jsonNode.get("cm").get("uid").asText();
             String area = jsonNode.get("cm").get("ar").asText();
@@ -226,6 +227,7 @@ public class ReadNewsStream {
             long afterTime=System.currentTimeMillis()/1000-36*24*60*60;
             Dataset<Row> qualityDf=sparkSession.read().jdbc(serverProps.getProperty("mysql.url"), "(select news_id,quality from news_quality where time_stam>"+afterTime+") tmp_news_quality", prop);
             qualityDf.registerTempTable("tmp_news_quality");
+            qualityDf.show();
             sparkSession.sqlContext().udf().register("cal_score",(UDF3<Long,Long,Double,Double>)( click, display, quality)-> {
                 /* 根据点击率，质量，计算新闻的分数,此处是调用算法的函数，所以写了一个随机数 */
                     return new Random().nextDouble();
@@ -234,6 +236,7 @@ public class ReadNewsStream {
             /* 点击和质量数据进行join，然后算出打分，最后排序 */
             df=sparkSession.sql("select t1.news_id,t1.area,t1.display,t1.click,t2.quality,cal_score(t1.click,t1.display,t2.quality) score from click_info t1 join tmp_news_quality t2 " +
                     "on t1.news_id=t2.news_id");
+            logger.info("采样排序结果");
             df.show();
             df.registerTempTable("tmp_news_score");
 
