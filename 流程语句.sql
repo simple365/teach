@@ -264,16 +264,16 @@ create temp view tmp_today_news as
  select t1.*,t2.total_click,t2.total_display from 
  (
 select news_id,area,min(first_display_time) first_display_time, max(last_display_time) last_display_time, min(first_click_time) first_click_time, max(last_click_time) last_click_time from (
-select news_id,area,min(server_time) first_display_time,max(server_time) last_display_time,null first_click_time,null last_click_time from ods_display_dt where dt='2018-09-30' and action='1' group by news_id,area  
+select newsid news_id,area,min(server_time) first_display_time,max(server_time) last_display_time,null first_click_time,null last_click_time from ods_display_dt where dt='2018-09-30' and action='1' group by newsid,area  
 union 
-select news_id,area,null first_display_time,null last_display_time,min(server_time) first_click_time,max(server_time) last_click_time from ods_display_dt where dt='2018-09-30' and action='2' group by news_id,area 
+select newsid news_id,area,null first_display_time,null last_display_time,min(server_time) first_click_time,max(server_time) last_click_time from ods_display_dt where dt='2018-09-30' and action='2' group by newsid,area 
 )
 group by news_id,area 
 ) t1 join mid_daily_news_dt t2 
 on t1.news_id =t2.news_id;
  
 insert overwrite table  mid_news_history_dt
-partition (dt='2018-09-30')
+partition (dt='2018-12-12')
 select 
 news_id,area,
 min(first_display_time) first_display_time, 
@@ -286,7 +286,7 @@ from
 (
 select * from tmp_today_news 
 union all 
-select news_id,area,first_display_time,last_display_time,first_click_time,last_click_time,total_display,total_click from mid_news_history_dt where dt='2018-09-29'
+select news_id,area,first_display_time,last_display_time,first_click_time,last_click_time,total_display,total_click from mid_news_history_dt where dt='2018-12-11'
 ) group by news_id,area;
 
 -- 计算每日新闻展现用户数，展现次数，
