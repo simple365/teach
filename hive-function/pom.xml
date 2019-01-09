@@ -11,7 +11,7 @@
         <project.build.sourceEncoding>UTF8</project.build.sourceEncoding>
         <!--Hadoop版本更改成自己的版本-->
         <hadoop.version>2.7.3</hadoop.version>
-        <hive.version>2.1.1</hive.version>
+        <hive.version>1.2.1</hive.version>
     </properties>
 
     <dependencies>
