@@ -17,3 +17,6 @@ log-collector/.classpath
 spark-news/.classpath
 spark-news/spark-news.iml
 spark-news/.project
+log-collector-web/.idea/
+.idea/
+log-collector-web/target/
