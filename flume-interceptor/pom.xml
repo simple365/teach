@@ -11,13 +11,15 @@
     <dependency>
         <groupId>org.apache.flume</groupId>
         <artifactId>flume-ng-core</artifactId>
-        <version>1.8.0</version>
+        <version>1.7.0</version>
     </dependency>
     <!-- https://mvnrepository.com/artifact/com.hadoop.gplcompression/hadoop-lzo -->
     <dependency>
         <groupId>com.hadoop.gplcompression</groupId>
         <artifactId>hadoop-lzo</artifactId>
         <version>0.4.20</version>
+        <scope>system</scope>
+        <systemPath>${project.basedir}/lib/hadoop-lzo-0.4.20.jar</systemPath>
     </dependency>
 </dependencies>
     <build>
