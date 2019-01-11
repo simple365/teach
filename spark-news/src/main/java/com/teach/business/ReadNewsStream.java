@@ -220,7 +220,7 @@ public class ReadNewsStream {
                     "left join " +
                     "(select count(distinct user_id) click ,news_id,area from news_click group by area,news_id) t2 " +
                     "on t1.news_id = t2.news_id) click_info", prop);
-            df.show();
+//            df.show();
             df.registerTempTable("click_info");
             /* 删除超过24小时的数据，此处因为测试，所以没写了。*/
             /* 读取24小时内的新闻质量 */
